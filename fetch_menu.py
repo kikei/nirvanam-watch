@@ -2,10 +2,10 @@
 
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
-import urllib
 import os
 import re
 import time
+import urllib
 
 CHROME_DRIVER_PATH = os.path.join(os.path.dirname('__file__'), 'chromedriver')
 TOP_PAGE = 'https://www.facebook.com/NirvanamTokyo/'
@@ -41,18 +41,6 @@ def mkdir_p(d):
         if not os.path.isdir(d):
             raise Error("failed to make directory")
 
-def download_to(url, d):
-    mkdir_p(d)
-    to = d + "/" + os.path.basename(url)
-    print("Downloading " + url + "...")
-    urllib.request.urlretrieve(url, to)
-
-def download_as(url, d, f):
-    mkdir_p(d)
-    to = d + "/" + f
-    print("Downloading " + url + "...")
-    urllib.request.urlretrieve(url, to)
-
 def click_later(browser):
     time.sleep(2.0)
     later = browser.find_elements_by_link_text('後で')
@@ -65,34 +53,53 @@ def fetch_menu(dir, path):
     
     click_later(browser)
     
-    try:
-        anchors = browser.find_elements_by_tag_name('a')
-        anchors = list_menu_anchor(anchors)
-        anchor = anchors[1]
-        anchor.click()
-    except WebDriverException:
-        print('failed to click anchor')
+    anchors = browser.find_elements_by_tag_name('a')
+    anchors = list_menu_anchor(anchors)
+
+    for anchor in anchors[1:]:
+        print("next anchor")
+        
+        try:
+            anchor.click()
+            time.sleep(3.0)
+        except WebDriverException:
+            print('failed to click menu anchor, retry')
+            script = 'window.scrollTo({0}, {1})'.format(0, anchor.location['y'])
+            browser.execute_script(script)
+            click_later(browser)
     
-    time.sleep(3.0)
-    spotlight = browser.find_elements_by_class_name('spotlight')
-    
-    if len(spotlight) == 0:
-        script = 'window.scrollTo({0}, {1})'.format(0, anchor.location['y'])
-        browser.execute_script(script)
-        click_later(browser)
-    
-        anchor.click()
-        time.sleep(3.0)
+            anchor.click()
+            time.sleep(3.0)
     
         spotlight = browser.find_elements_by_class_name('spotlight')
     
-    src = spotlight[0].get_attribute('src')
-    download_as(src, dir, path)
+        if len(spotlight) >= 0:
+            src = spotlight[0].get_attribute('src')
+            print("spotlight found, src=" + src)
+            
+            download_as(src, dir, path)
+            browser.find_element_by_tag_name('body').click()
+            yield os.path.join(dir, path)
     
     browser.close()
 
 def fetch_menu_image(dir, path):
-    fetch_menu(dir, path)
+    for image in fetch_menu(dir, path):
+        yield image
 
-if __name__ == '__main__':
-    fetch_menu_image(SAVE_DIR, 'menu.jpg')
+def download_to(url, d):
+    mkdir_p(d)
+    to = d + "/" + os.path.basename(url)
+    print("Downloading " + url + "...")
+    urllib.request.urlretrieve(url, to)
+    print("done")
+
+def download_as(url, d, f):
+    mkdir_p(d)
+    to = d + "/" + f
+    print("Downloading " + url + "...")
+    urllib.request.urlretrieve(url, to)
+    print("done")
+
+# if __name__ == '__main__':
+#     fetch_menu_image(SAVE_DIR, 'menu.jpg')

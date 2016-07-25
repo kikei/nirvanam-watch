@@ -3,7 +3,6 @@ from read_menu import read_menu_image
 
 MENU_IMAGE_DIR = './download'
 MENU_IMAGE_NAME = 'menu.jpg'
-MENU_IMAGE_PATH = MENU_IMAGE_DIR + '/' + MENU_IMAGE_NAME
 
 def japanise_word(name):
     d = dict()
@@ -18,20 +17,26 @@ def japanise_word(name):
     d['dessert'] = 'デザート'
     d['flavoured'] = ''
     d['fry'] = 'フライ'
+    d['jalfrezi'] = 'ジャルフレジ'
     d['kadai'] = 'カダイ'
     d['keema'] = 'キマ'
     d['lemon'] = 'レモン'
+    d['methi'] = 'メティ'
     d['mutton'] = 'マトン'
     d['nan'] = 'ナン'
+    d['naan'] = 'ナン'
     d['palak'] = 'パラク'
     d['peas'] = 'ピス'
     d['payasam'] = 'パヤサム'
+    d['pepper'] = 'ペッパ'
     d['pineapple'] = 'バイナップル'
     d['pulao'] = 'プラウ'
     d['rajma'] = 'ラッマ'
     d['rice'] = 'ライス'
     d['sambar'] = 'サンバル'
     d['seafood'] = 'シーフード'
+    d['tadka'] = 'タッカ'
+    d['tapioca'] = 'タピオカ'
     d['vada'] = 'ワダ'
     d['vegetable'] = 'ベジタブル'
     if name in d:
@@ -65,15 +70,21 @@ def japanise_menu(name):
     return "".join(jpmenu)
 
 def main():
-    fetch_menu_image(MENU_IMAGE_DIR, MENU_IMAGE_NAME)
-    menus = read_menu_image(MENU_IMAGE_PATH)
+    for image in fetch_menu_image(MENU_IMAGE_DIR, MENU_IMAGE_NAME):
+        menus = read_menu_image(image)
+        if menus is not None: break
+    
+    print("menu is")
+    for menu in menus: print("- " + menu)
     
     result = []
     for menu in menus:
         jp = japanise_menu(menu)
         result.append(jp + ' [' + menu + ']')
-    for menu in result:
-        print(menu)
+
+    print("")
+    print("== Today's Special Lunch Menu ==")
+    for menu in result: print(menu)
 
 if __name__ == '__main__':
     main()

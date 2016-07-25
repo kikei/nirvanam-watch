@@ -7,7 +7,7 @@ import base64
 # Refer [Google Cloud Vision API](https://cloud.google.com/vision/reference/rest/)
 GOOGLE_CLOUD_VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate?key='
 API_KEY = 'AIzaSyB1dR9bjQ-ojg-TAO8KkZAjyr79r819A14'
-MENU_IMAGE_PATH = './image/menu.jpg'
+MENU_IMAGE_PATH = './download/menu.jpg'
 SHOP_NAME = '有明店'
 
 def flatten(lst):
@@ -100,6 +100,8 @@ def get_menu(image_content):
     desc = json['responses'][0]['textAnnotations'][0]['description']
     toks = split_desc(desc)
     menus = get_menu_of(toks, SHOP_NAME)
+    if menus is None:
+        return None
     menus = filter_menu(menus)
     return menus
 
