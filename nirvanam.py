@@ -12,16 +12,22 @@ def japanise_word(name):
     d['carrot'] = '人参'
     d['chettinad'] = 'チェッティナド'
     d['chicken'] = 'チキン'
+    d['chocolate'] = 'チョコレート'
     d['curry'] = 'カレー'
     d['dal'] = 'ダル'
+    d['daikon'] = 'ダイコン'
     d['dessert'] = 'デザート'
     d['flavoured'] = ''
     d['fry'] = 'フライ'
+    d['hyderabadi'] = 'ハイドラバディ'
     d['jalfrezi'] = 'ジャルフレジ'
     d['kadai'] = 'カダイ'
+    d['kebab'] = 'ケバブ'
     d['keema'] = 'キマ'
     d['lemon'] = 'レモン'
+    d['Mushroom'] = 'マスルム'
     d['methi'] = 'メティ'
+    d['moussee'] = 'ムース'
     d['mutton'] = 'マトン'
     d['nan'] = 'ナン'
     d['naan'] = 'ナン'
@@ -71,7 +77,9 @@ def japanise_menu(name):
 
 def main():
     for image in fetch_menu_image(MENU_IMAGE_DIR, MENU_IMAGE_NAME):
+        print("Reading menu text...")
         menus = read_menu_image(image)
+        print("Reading menu text...done")
         if menus is not None: break
     
     print("menu is")

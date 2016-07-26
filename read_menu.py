@@ -8,7 +8,7 @@ import base64
 GOOGLE_CLOUD_VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate?key='
 API_KEY = 'AIzaSyB1dR9bjQ-ojg-TAO8KkZAjyr79r819A14'
 MENU_IMAGE_PATH = './download/menu.jpg'
-SHOP_NAME = '有明店'
+SHOP_NAMES = [ '有明店', 'ARIAKE', 'Ariake' ]
 
 def flatten(lst):
     flat = []
@@ -99,8 +99,11 @@ def get_menu(image_content):
     json = detect_text(image_content)
     desc = json['responses'][0]['textAnnotations'][0]['description']
     toks = split_desc(desc)
-    menus = get_menu_of(toks, SHOP_NAME)
+    for shop_name in SHOP_NAMES:
+        menus = get_menu_of(toks, shop_name)
+        if menus is not None: break
     if menus is None:
+        print("failed to get menu: desc=" + desc)
         return None
     menus = filter_menu(menus)
     return menus
