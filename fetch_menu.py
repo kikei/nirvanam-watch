@@ -48,13 +48,17 @@ def click_later(browser):
         later[0].click()
 
 def fetch_menu(dir, path):
+    print("Opening web browser...")
     browser = webdriver.Chrome(CHROME_DRIVER_PATH)
     browser.get(TOP_PAGE)
+    print("Opening web browser...done")
     
     click_later(browser)
-    
+
+    print("Collecting menu anchors...")
     anchors = browser.find_elements_by_tag_name('a')
     anchors = list_menu_anchor(anchors)
+    print("Collecting menu anchors...done")
 
     for anchor in anchors[1:]:
         print("next anchor")
@@ -89,17 +93,21 @@ def fetch_menu_image(dir, path):
 
 def download_to(url, d):
     mkdir_p(d)
-    to = d + "/" + os.path.basename(url)
-    print("Downloading " + url + "...")
-    urllib.request.urlretrieve(url, to)
-    print("done")
+    fetch_url(url, d + "/" + os.path.basename(url))
 
 def download_as(url, d, f):
     mkdir_p(d)
-    to = d + "/" + f
-    print("Downloading " + url + "...")
-    urllib.request.urlretrieve(url, to)
-    print("done")
+    fetch_url(url, d + "/" + f)
 
+def fetch_url(url, dest):
+    print("Downloading " + url + "...")
+    response = urllib.request.urlopen(url)
+    with open(dest, 'wb') as out:
+        while True:
+            chunk = response.read(16384)
+            if not chunk: break
+            out.write(chunk)
+    print("done")
+    
 # if __name__ == '__main__':
 #     fetch_menu_image(SAVE_DIR, 'menu.jpg')
