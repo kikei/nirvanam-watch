@@ -26,6 +26,19 @@ def list_menu_anchor(anchors):
         lst.append(a)
     return lst
 
+def menu_anchors(browser):
+    for a in browser.find_elements_by_tag_name('a'):
+        href = a.get_attribute('href')
+        if href is None: continue
+        if href.find('NirvanamTokyo/photos/') <= -1: continue
+        imgs = a.find_elements_by_tag_name('img')
+        if len(imgs) == 0: continue
+        img = imgs[0]
+        w = img.get_attribute('width')
+        if w is None: continue
+        if int(w) < 200: continue
+        yield a
+
 def list_src(imgs):
     return list(filter(lambda p: p is not None, map(to_src, imgs)))
 
@@ -47,6 +60,10 @@ def click_later(browser):
     if len(later) != 0:
         later[0].click()
 
+def scroll_to(browser, element):
+    script = 'window.scrollTo({0}, {1})'.format(0, element.location['y'])
+    browser.execute_script(script)
+
 def fetch_menu(dir, path):
     print("Opening web browser...")
     browser = webdriver.Chrome(CHROME_DRIVER_PATH)
@@ -55,12 +72,8 @@ def fetch_menu(dir, path):
     
     click_later(browser)
 
-    print("Collecting menu anchors...")
-    anchors = browser.find_elements_by_tag_name('a')
-    anchors = list_menu_anchor(anchors)
-    print("Collecting menu anchors...done")
-
-    for anchor in anchors[1:]:
+    print("Searching menu anchors...")
+    for anchor in menu_anchors(browser):
         print("next anchor")
         
         try:
@@ -68,8 +81,7 @@ def fetch_menu(dir, path):
             time.sleep(3.0)
         except WebDriverException:
             print('failed to click menu anchor, retry')
-            script = 'window.scrollTo({0}, {1})'.format(0, anchor.location['y'])
-            browser.execute_script(script)
+            scroll_to(browser, anchor)
             click_later(browser)
     
             anchor.click()
