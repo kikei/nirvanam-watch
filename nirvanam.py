@@ -1,68 +1,34 @@
+from difflib import SequenceMatcher
+
 from fetch_menu import fetch_menu_image
 from read_menu import read_menu_image
 
 MENU_IMAGE_DIR = './download'
 MENU_IMAGE_NAME = 'menu.jpg'
+WORD_DICTIONARY = 'res/en-jp_dictionary.csv'
 
-def japanise_word(name):
-    d = dict()
-    d['as'] = ''
-    d['aloo'] = 'アル'
-    d['biryani'] = 'ビリヤニ'
-    d['black'] = '黒'
-    d['butter'] = 'バーター'
-    d['carrot'] = '人参'
-    d['chana'] = 'チャナ'
-    d['chettinad'] = 'チェッティナド'
-    d['chicken'] = 'チキン'
-    d['chocolate'] = 'チョコレート'
-    d['curry'] = 'カレー'
-    d['dal'] = 'ダル'
-    d['daliya'] = 'ダリヤ'
-    d['daikon'] = 'ダイコン'
-    d['dessert'] = 'デザート'
-    d['do'] = 'ド'
-    d['flavoured'] = ''
-    d['fry'] = 'フライ'
-    d['garlic'] = 'ガーリック'
-    d['gourd'] = 'ウリ'
-    d['green'] = 'グリン'
-    d['hyderabadi'] = 'ハイドラバディ'
-    d['jalfrezi'] = 'ジャルフレジ'
-    d['kadai'] = 'カダイ'
-    d['kebab'] = 'ケバブ'
-    d['keema'] = 'キマ'
-    d['lemon'] = 'レモン'
-    d['lobiya'] = 'ロビヤ'
-    d['masala'] = 'マサラ'
-    d['Mushroom'] = 'マスルム'
-    d['methi'] = 'メティ'
-    d['mixed'] = 'ミックス'
-    d['moong'] = 'モング'
-    d['moussee'] = 'ムース'
-    d['mutton'] = 'マトン'
-    d['nan'] = 'ナン'
-    d['naan'] = 'ナン'
-    d['palak'] = 'パラク'
-    d['peas'] = 'ピス'
-    d['payasam'] = 'パヤサム'
-    d['pepper'] = 'ペッパ'
-    d['pineapple'] = 'バイナップル'
-    d['pulao'] = 'プラウ'
-    d['pyaaz'] = 'ピヤズ'
-    d['raitha'] = 'ライタ'
-    d['rajma'] = 'ラッマ'
-    d['rice'] = 'ライス'
-    d['sambar'] = 'サンバル'
-    d['seafood'] = 'シーフード'
-    d['snake'] = 'ヘビ'
-    d['tadka'] = 'タッカ'
-    d['tapioca'] = 'タピオカ'
-    d['vada'] = 'ワダ'
-    d['vegetable'] = 'ベジタブル'
-    if name in d:
-        return d[name]
-    else:
+def word_similarity(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+class WordDictionary:
+
+    def __init__(self, filename):        
+        d = dict()
+        with open(filename, encoding='utf-8') as file:
+            lines = file.readlines()
+            lines = map(lambda a: a.split(','), lines)
+            lines = filter(lambda a: len(a) >= 1 and len(a[0]) >= 1, lines)
+            for line in lines:
+                d[line[0]] = line[1].strip()
+        self.dictionary = d
+    
+    def lookup(self, word, allow_similarity=1.0):
+        if word in self.dictionary:
+            return self.dictionary[word]
+        for key in self.dictionary.keys():
+            similarity = word_similarity(key, word)
+            if similarity >= allow_similarity:
+                return self.dictionary[key]
         return None
 
 def to_words(name):
@@ -78,12 +44,12 @@ def to_words(name):
             i += 1
     return words
 
-def japanise_menu(name):
+def japanise_menu(name, word_dict):
     words = to_words(name)
     words = filter(lambda w: w != ' ', words)
     jpmenu = []
     for w in words:
-        jp = japanise_word(w.lower())
+        jp = word_dict.lookup(w.lower(), allow_similarity=0.8)
         if jp is None:
             jpmenu.append(w)
         else:
@@ -99,10 +65,11 @@ def main():
     
     print("menu is")
     for menu in menus: print("- " + menu)
-    
+
+    en_jp = WordDictionary(WORD_DICTIONARY)
     result = []
     for menu in menus:
-        jp = japanise_menu(menu)
+        jp = japanise_menu(menu, en_jp)
         result.append(jp + ' [' + menu + ']')
 
     print("")
