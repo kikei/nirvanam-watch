@@ -103,7 +103,7 @@ def get_menu(image_content):
         menus = get_menu_of(toks, shop_name)
         if menus is not None: break
     if menus is None:
-        print("failed to get menu: json=" + json)
+        print("failed to get menu: json=" + str(json))
         return None
     menus = filter_menu(menus)
     return menus
