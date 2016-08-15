@@ -1,0 +1,7 @@
+# Your Google Cloud Vision API Key.
+GOOGLE_API_KEY = None
+
+MENU_IMAGE_DIR = './download'
+MENU_IMAGE_NAME = 'menu.jpg'
+
+WORD_DICTIONARY = 'res/en-jp_dictionary.csv'
