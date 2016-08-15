@@ -6,15 +6,8 @@ import requests
 import json
 import base64
 
-logger = logging.getLogger(__name__)
-file_handler = logging.FileHandler('nirvanam.log', 'a+')
-file_handler.level = logging.DEBUG
-logger.addHandler(file_handler)
-    
 # Refer [Google Cloud Vision API](https://cloud.google.com/vision/reference/rest/)
 GOOGLE_CLOUD_VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate?key='
-API_KEY = 'AIzaSyB1dR9bjQ-ojg-TAO8KkZAjyr79r819A14'
-MENU_IMAGE_PATH = './download/menu.jpg'
 SHOP_NAMES = [ '有明店', 'ARIAKE', 'Ariake' ]
 
 def flatten(lst):
@@ -45,15 +38,6 @@ def make_request_body(image_content):
         }]
     })
     return req_body
-    
-def detect_text(image_content):
-    api_uri = GOOGLE_CLOUD_VISION_API_URL + API_KEY
-    req_body = make_request_body(image_content)
-    res = requests.post(api_uri, data=req_body)
-    if not res.ok:
-        logger.error('Error: {0}'.format(res.status_code))
-        return None        
-    return res.json()
 
 def split_desc(desc):
     texts = desc.split('\n')
@@ -102,30 +86,45 @@ def is_english_name(name):
 def filter_menu(menus):
     return list(filter(is_english_name, menus))
 
-def get_menu(image_content):
-    json = detect_text(image_content)
-    desc = json['responses'][0]['textAnnotations'][0]['description']
-    toks = split_desc(desc)
-    for shop_name in SHOP_NAMES:
-        menus = get_menu_of(toks, shop_name)
-        if menus is not None: break
-    if menus is None:
-        logger.error("failed to get menu: json=" + str(json))
-        return None
-    menus = filter_menu(menus)
-    return menus
+class MenuReader:
+    def __init__(self, google_api_key, logger=None):
+        self.google_api_key = google_api_key
+        if logger is None:
+            self.logger = logger or logging.getLogger(__name__)
 
-def read_menu_image(imagefile):
-    image_content = load_image(imagefile)
-    menus = get_menu(image_content)
-    return menus
+    def detect_text(self, image_content):
+        api_uri = GOOGLE_CLOUD_VISION_API_URL + self.google_api_key
+        req_body = make_request_body(image_content)
+        res = requests.post(api_uri, data=req_body)
+        if not res.ok:
+            logger.error('Error: {0}'.format(res.status_code))
+            return None        
+        return res.json()
 
-def main():
-    menus = read_menu_image(MENU_IMAGE_PATH)
-    for menu in menus:
-        print(menu)
+    def get_menu(self, image_content):
+        json = self.detect_text(image_content)
+        desc = json['responses'][0]['textAnnotations'][0]['description']
+        toks = split_desc(desc)
+        for shop_name in SHOP_NAMES:
+            menus = get_menu_of(toks, shop_name)
+            if menus is not None: break
+        if menus is None:
+            logger.error("failed to get menu: json=" + str(json))
+            return None
+        menus = filter_menu(menus)
+        return menus
 
-if __name__ == '__main__':
-    main()
+    def read_menu_image(self, imagefile):
+        image_content = load_image(imagefile)
+        menus = self.get_menu(image_content)
+        return menus
+
+# def main():
+#     menus = read_menu_image(MENU_IMAGE_PATH)
+#     for menu in menus:
+#         print(menu)
+# 
+# if __name__ == '__main__':
+#     main()
 
     
