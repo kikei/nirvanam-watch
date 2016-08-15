@@ -1,7 +1,13 @@
+import logging
 from difflib import SequenceMatcher
 
 from fetch_menu import fetch_menu_image
 from read_menu import read_menu_image
+
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler('nirvanam.log', 'a+')
+file_handler.level = logging.DEBUG
+logger.addHandler(file_handler)
 
 MENU_IMAGE_DIR = './download'
 MENU_IMAGE_NAME = 'menu.jpg'
@@ -58,13 +64,13 @@ def japanise_menu(name, word_dict):
 
 def main():
     for image in fetch_menu_image(MENU_IMAGE_DIR, MENU_IMAGE_NAME):
-        print("Reading menu text...")
+        logger.debug("Reading menu text...")
         menus = read_menu_image(image)
-        print("Reading menu text...done")
-        if menus is not None: break
+        logger.debug("Reading menu text...done")
+        if menus is not None and len(menus) > 5: break
     
-    print("menu is")
-    for menu in menus: print("- " + menu)
+    logger.debug("menu is")
+    for menu in menus: logger.debug("- " + menu)
 
     en_jp = WordDictionary(WORD_DICTIONARY)
     result = []

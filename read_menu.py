@@ -1,9 +1,16 @@
 #!/usr/bin/python3
 
+import logging
+
 import requests
 import json
 import base64
 
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler('nirvanam.log', 'a+')
+file_handler.level = logging.DEBUG
+logger.addHandler(file_handler)
+    
 # Refer [Google Cloud Vision API](https://cloud.google.com/vision/reference/rest/)
 GOOGLE_CLOUD_VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate?key='
 API_KEY = 'AIzaSyB1dR9bjQ-ojg-TAO8KkZAjyr79r819A14'
@@ -44,7 +51,7 @@ def detect_text(image_content):
     req_body = make_request_body(image_content)
     res = requests.post(api_uri, data=req_body)
     if not res.ok:
-        print('Error: {0}'.format(res.status_code))
+        logger.error('Error: {0}'.format(res.status_code))
         return None        
     return res.json()
 
@@ -103,7 +110,7 @@ def get_menu(image_content):
         menus = get_menu_of(toks, shop_name)
         if menus is not None: break
     if menus is None:
-        print("failed to get menu: json=" + str(json))
+        logger.error("failed to get menu: json=" + str(json))
         return None
     menus = filter_menu(menus)
     return menus
