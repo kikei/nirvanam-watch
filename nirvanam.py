@@ -1,15 +1,10 @@
 import logging
+import sys
 from difflib import SequenceMatcher
 
 from fetch_menu import fetch_menu_image
 from read_menu import MenuReader
 import settings
-
-logger = logging.getLogger(__name__)
-file_handler = logging.FileHandler('nirvanam.log', 'a+')
-file_handler.level = logging.DEBUG
-logger.addHandler(file_handler)
-
 
 def word_similarity(a, b):
     return SequenceMatcher(None, a, b).ratio()
@@ -60,7 +55,21 @@ def japanise_menu(name, word_dict):
             jpmenu.append(jp)
     return "".join(jpmenu)
 
+def getLogger():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.DEBUG)
+    logger.addHandler(stream_handler)
+    
+    file_handler = logging.FileHandler('nirvanam.log', 'a+')
+    file_handler.setLevel(logging.DEBUG)
+    logger.addHandler(file_handler)
+    return logger
+
 def main():
+    logger = getLogger()
     menu_reader = MenuReader(settings.GOOGLE_API_KEY, logger=logger)
     for image in fetch_menu_image(settings.MENU_IMAGE_DIR, settings.MENU_IMAGE_NAME):
         logger.debug("Reading menu text...")

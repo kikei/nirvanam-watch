@@ -89,27 +89,27 @@ def filter_menu(menus):
 class MenuReader:
     def __init__(self, google_api_key, logger=None):
         self.google_api_key = google_api_key
-        if logger is None:
-            self.logger = logger or logging.getLogger(__name__)
+        self.logger = logger or logging.getLogger(__name__)
 
     def detect_text(self, image_content):
         api_uri = GOOGLE_CLOUD_VISION_API_URL + self.google_api_key
         req_body = make_request_body(image_content)
         res = requests.post(api_uri, data=req_body)
         if not res.ok:
-            logger.error('Error: {0}'.format(res.status_code))
+            self.logger.error('Error: {0}'.format(res.status_code))
             return None        
         return res.json()
 
     def get_menu(self, image_content):
         json = self.detect_text(image_content)
         desc = json['responses'][0]['textAnnotations'][0]['description']
+        self.logger.debug('ocr description={}'.format(desc))
         toks = split_desc(desc)
         for shop_name in SHOP_NAMES:
             menus = get_menu_of(toks, shop_name)
             if menus is not None: break
         if menus is None:
-            logger.error("failed to get menu: json=" + str(json))
+            self.logger.error("failed to get menu: json=" + str(json))
             return None
         menus = filter_menu(menus)
         return menus
