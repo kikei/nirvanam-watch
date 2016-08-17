@@ -81,6 +81,8 @@ def is_english_name(name):
         if '一' <= c and c <= '龠': return False 
         if 'ぁ' <= c and c <= 'ん': return False
         if 'ァ' <= c and c <= 'ヴ': return False
+    alpha = filter(lambda c: 'A' <= c <= 'Z' or 'a' <= c <= 'z', name)
+    if len(list(alpha)) < 2: return False
     return True
 
 def filter_menu(menus):
@@ -105,6 +107,7 @@ class MenuReader:
         desc = json['responses'][0]['textAnnotations'][0]['description']
         self.logger.debug('ocr description={}'.format(desc))
         toks = split_desc(desc)
+        for tok in toks: self.logger.debug('ocr tok={}'.format(tok))
         for shop_name in SHOP_NAMES:
             menus = get_menu_of(toks, shop_name)
             if menus is not None: break
