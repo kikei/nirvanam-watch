@@ -76,17 +76,26 @@ def remove_comment(toks):
     """
     return list(filter(lambda x: not is_comment(x), toks))
 
+def is_japanese_char(c):
+    if '一' <= c and c <= '龠': return True
+    if 'ぁ' <= c and c <= 'ん': return True
+    if 'ァ' <= c and c <= 'ヴ': return True
+    if 'ー' <= c and c <= 'ー': return True
+    return False
+
 def is_english_name(name):
-    for c in name:
-        if '一' <= c and c <= '龠': return False 
-        if 'ぁ' <= c and c <= 'ん': return False
-        if 'ァ' <= c and c <= 'ヴ': return False
     alpha = filter(lambda c: 'A' <= c <= 'Z' or 'a' <= c <= 'z', name)
     if len(list(alpha)) < 2: return False
     return True
 
+def only_english_name(name):
+    name = filter(lambda c: not is_japanese_char(c), name)
+    name = ''.join(name)
+    return name.strip()
+
 def filter_menu(menus):
-    return list(filter(is_english_name, menus))
+    menus = map(only_english_name, menus)
+    return list(filter(lambda m: m is not None and is_english_name(m), menus))
 
 class MenuReader:
     def __init__(self, google_api_key, logger=None):
