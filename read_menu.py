@@ -41,8 +41,8 @@ def make_request_body(image_content):
 
 def split_desc(desc):
     texts = desc.split('\n')
-    texts = flatten([ x.split(',') for x in texts ])
-    texts = flatten([ x.split('、') for x in texts ])
+    for sep in [',', '.', '、']:
+        texts = flatten([ x.split(sep) for x in texts ])
     texts = [ x.strip() for x in texts if len(x) > 0 ]
     return texts
 
