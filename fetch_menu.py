@@ -7,7 +7,7 @@ import re
 import time
 import urllib
 
-CHROME_DRIVER_PATH = os.path.join(os.path.dirname('__file__'), 'chromedriver')
+CHROME_DRIVER_PATH = os.path.join(os.path.dirname(os.path.abspath('__file__')), 'chromedriver')
 TOP_PAGE = 'https://www.facebook.com/NirvanamTokyo/'
 SAVE_DIR = 'download'
 
