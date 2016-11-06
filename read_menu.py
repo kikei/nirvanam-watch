@@ -10,6 +10,12 @@ import base64
 GOOGLE_CLOUD_VISION_API_URL = 'https://vision.googleapis.com/v1/images:annotate?key='
 SHOP_NAMES = [ '有明店', 'ARIAKE', 'Ariake' ]
 
+# Priority coefficient for clustering words
+CLUSTERING_HORIZONTAL_PRIORITY = 2.0
+
+# Line height to determine if two words are on same line.
+LINE_BREAKING_HEIGHT = 10
+
 def flatten(lst):
     flat = []
     for i in lst:
@@ -19,11 +25,29 @@ def flatten(lst):
             flat.append(i)
     return flat
 
+def split_by(lst, d):
+    """
+    Split list by d as delimiter.
+    list<a> -> list<list<a>>
+    """
+    xs = []
+    while d in lst:
+        idx = lst.index(d)
+        if (idx > 0): xs.append(lst[:idx])
+        lst = lst[idx+1:]
+    if len(lst) > 0: xs.append(lst)
+    return xs
+
 def load_image(image_path):
     bs = None
     with open(image_path, 'rb') as f:
         bs = base64.b64encode(f.read())
     return bs
+
+def is_shop_name(text):
+    for word in SHOP_NAMES:
+        if word in text: return True
+    return False
 
 def make_request_body(image_content):
     req_body = json.dumps({
@@ -38,43 +62,9 @@ def make_request_body(image_content):
         }]
     })
     return req_body
-
-def split_desc(desc):
-    texts = desc.split('\n')
-    for sep in [',', '.', '、']:
-        texts = flatten([ x.split(sep) for x in texts ])
-    texts = [ x.strip() for x in texts if len(x) > 0 ]
-    return texts
-
-def get_menu_of(descs, shop):
-    for i in range(len(descs)):
-        d = descs[i]
-        if d.find(shop) > -1:
-            return descs[i+1:]
-    return None    
-
-def is_comment(chars):
-    matched = 0
-    for c in chars:
-        if '一' <= c and c <= '龠':
-            matched += 1
-            break
-    for c in chars:
-        if 'ぁ' <= c and c <= 'ん':
-            matched += 1
-            break
-    for c in chars:
-        if 'ァ' <= c and c <= 'ヴ':
-            matched += 1
-            break
-    return matched > 1
     
-def remove_comment(toks):
-    """
-    メニューに混入したコメントを除外する。
-    漢字・ひらがな・カタカナの2種類以上が含まれていたらコメントとみなす。
-    """
-    return list(filter(lambda x: not is_comment(x), toks))
+def is_symbol(c):
+    return not c.isalnum() or is_japanese_word(c)
 
 def is_japanese_char(c):
     if '一' <= c and c <= '龠': return True
@@ -83,19 +73,10 @@ def is_japanese_char(c):
     if 'ー' <= c and c <= 'ー': return True
     return False
 
-def is_english_name(name):
-    alpha = filter(lambda c: 'A' <= c <= 'Z' or 'a' <= c <= 'z', name)
-    if len(list(alpha)) < 2: return False
-    return True
-
-def only_english_name(name):
-    name = filter(lambda c: not is_japanese_char(c), name)
-    name = ''.join(name)
-    return name.strip()
-
-def filter_menu(menus):
-    menus = map(only_english_name, menus)
-    return list(filter(lambda m: m is not None and is_english_name(m), menus))
+def is_japanese_word(w):
+    for c in w:
+        if is_japanese_char(c): return True
+    return False
 
 class MenuReader:
     def __init__(self, google_api_key, logger=None):
@@ -111,19 +92,126 @@ class MenuReader:
             return None        
         return res.json()
 
+    def cancel_noise(self, annotations):
+        from scipy.spatial.distance import pdist
+        from scipy.cluster.hierarchy import ward, dendrogram
+        # from matplotlib.pyplot import show
+        
+        def calc_center(annotation):
+            vs = annotation['boundingPoly']['vertices']
+            return [ (vs[0]['x'] + vs[2]['x']) / 2.0 /
+                     CLUSTERING_HORIZONTAL_PRIORITY,
+                     (vs[0]['y'] + vs[2]['y']) / 2.0]
+        descs = list(map(calc_center, annotations))
+
+        dists = pdist(descs)
+        clusters = ward(dists)
+        
+        # print('drawing dendrogram')
+        # dendrogram(clusters)
+        # show()
+
+        def get_label(t):
+            if is_shop_name(t):
+                return +1
+            elif 'Indicated' in t:
+                return -1
+            else:
+                return 0
+
+        result = []
+        for i in range(0, len(annotations)):
+            result.append((get_label(annotations[i]['description']), [i]))
+
+        indexes = None
+        # Get only menu
+        for i in range(0, len(clusters)):
+            cl = clusters[i]
+            i0 = int(cl[0])
+            i1 = int(cl[1])
+
+            a = None
+            if result[i0][0] == 0:
+                if result[i1][0] == -1:
+                    a = (-1, [])
+                else:
+                    a = (result[i1][0], result[i0][1] + result[i1][1])
+            elif result[i0][0] == -1:
+                if result[i1][0] == +1:
+                    indexes = result[i1][1]; break
+                else:
+                    a = (-1, [])
+            else: # result[i0][0] == +1
+                if result[i1][0] == -1:
+                    indexes = result[i0][1]; break
+                else:
+                    a = (result[i0][0], result[i0][1] + result[i1][1])
+            result.append(a)
+        
+        if indexes is None:
+            self.logger.error('cannot find menu')
+            return []
+
+        indexes.sort()
+        annotations = list(map(lambda i: annotations[i], indexes))
+        return annotations
+
+    def group_by_line(self, annotations):
+        def position_y(annotation):
+            vs = annotation['boundingPoly']['vertices']
+            return (vs[0]['y'] + vs[2]['y']) / 2.0
+
+        def group_by_line(annotations):
+            lines = []
+            line = []
+            last_y = 0.0
+            for annotation in annotations:
+                y = position_y(annotation)
+                if abs(last_y - y) < LINE_BREAKING_HEIGHT:
+                    line.append(annotation)
+                else:
+                    if len(line) > 0: lines.append(line)
+                    line = [annotation]
+                    last_y = y
+            if len(line) > 0: lines.append(line)
+            return lines
+        
+        annotations = group_by_line(annotations)
+        return annotations
+
+    def get_descriptions(self, annotations):
+        def get_description(annotation):
+            return annotation['description']
+        lines = map(lambda line: list(map(get_description, line)), annotations)
+        return lines
+        
     def get_menu(self, image_content):
-        json = self.detect_text(image_content)
-        desc = json['responses'][0]['textAnnotations'][0]['description']
-        self.logger.debug('ocr description={}'.format(desc))
-        toks = split_desc(desc)
-        for tok in toks: self.logger.debug('ocr tok={}'.format(tok))
-        for shop_name in SHOP_NAMES:
-            menus = get_menu_of(toks, shop_name)
-            if menus is not None: break
-        if menus is None:
-            self.logger.error("failed to get menu: json=" + str(json))
-            return None
-        menus = filter_menu(menus)
+        # data = self.detect_text(image_content)
+        with open('ocr.json') as file:
+            data = json.load(file)
+        
+        annotations = data['responses'][0]['textAnnotations']
+
+        # Skip totaled annotation
+        annotations = annotations[1:]
+
+        # Noice canceling
+        annotations = self.cancel_noise(annotations)
+
+        # Group annotations by line
+        annotations = self.group_by_line(annotations)
+
+        # Get descriptions
+        lines = self.get_descriptions(annotations)
+        
+        menus = []
+        for line in lines:
+            t = ''.join(line)
+            if is_japanese_word(t): continue
+            if is_shop_name(t): continue
+            wss = split_by(line, ',')
+            menus += map(lambda ws: ' '.join(ws), wss)
+
         return menus
 
     def read_menu_image(self, imagefile):
