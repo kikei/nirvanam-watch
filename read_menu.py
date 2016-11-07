@@ -186,9 +186,11 @@ class MenuReader:
         return lines
         
     def get_menu(self, image_content):
-        # data = self.detect_text(image_content)
-        with open('ocr.json') as file:
-            data = json.load(file)
+        data = self.detect_text(image_content)
+        
+        # For development
+        # with open('ocr.json') as file:
+        #     data = json.load(file)
         
         annotations = data['responses'][0]['textAnnotations']
 
