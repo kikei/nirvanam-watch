@@ -1,3 +1,6 @@
 settings.py
-chromedriver.exe
+chromedriver*
+
+# python
 __pycache__
+*.pyc
