@@ -4,6 +4,7 @@ from difflib import SequenceMatcher
 
 from fetch_menu import fetch_menu_image
 from read_menu import MenuReader
+from chrome_proxy import ChromeProxy
 import settings
 
 def word_similarity(a, b):
@@ -71,7 +72,17 @@ def getLogger():
 def main():
     logger = getLogger()
     menu_reader = MenuReader(settings.GOOGLE_API_KEY, logger=logger)
-    for image in fetch_menu_image(settings.MENU_IMAGE_DIR, settings.MENU_IMAGE_NAME):
+
+    proxy = None
+    if settings.PROXY_HOST is not None:
+        proxy = ChromeProxy(settings.PROXY_HOST,
+                            settings.PROXY_PORT,
+                            settings.PROXY_USERNAME,
+                            settings.PROXY_PASSWORD)
+    
+    for image in fetch_menu_image(settings.DATA_DIR,
+                                  settings.MENU_IMAGE_NAME,
+                                  proxy=proxy):
         logger.debug("Reading menu text...")
         menus = menu_reader.read_menu_image(image)
         logger.debug("Reading menu text...done")
