@@ -9,7 +9,7 @@ import urllib
 
 CHROME_DRIVER_PATH = os.path.join(os.path.dirname('__file__'), 'chromedriver')
 TOP_PAGE = 'https://www.facebook.com/NirvanamTokyo/'
-SAVE_DIR = 'download'
+CHROME_EXTENSION_FILENAME = 'proxy.zip'
 
 def list_menu_anchor(anchors):
     lst = []
@@ -64,9 +64,9 @@ def scroll_to(browser, element):
     script = 'window.scrollTo({0}, {1})'.format(0, element.location['y'])
     browser.execute_script(script)
 
-def fetch_menu(dir, path):
+def fetch_menu(dir, path, options=None):
     print("Opening web browser...")
-    browser = webdriver.Chrome(CHROME_DRIVER_PATH)
+    browser = webdriver.Chrome(CHROME_DRIVER_PATH, chrome_options=options)
     browser.get(TOP_PAGE)
     print("Opening web browser...done")
     
@@ -99,8 +99,16 @@ def fetch_menu(dir, path):
     
     browser.close()
 
-def fetch_menu_image(dir, path):
-    for image in fetch_menu(dir, path):
+from selenium.webdriver.chrome.options import Options
+
+def fetch_menu_image(dir, path, proxy=None):
+    options = None
+    if proxy is not None:
+        extpath = os.path.join(dir, CHROME_EXTENSION_FILENAME)
+        proxy.generate_extension(extpath)
+        options = Options()
+        options.add_extension(extpath)
+    for image in fetch_menu(dir, path, options):
         yield image
 
 def download_to(url, d):
