@@ -121,6 +121,8 @@ class MenuReader:
 
         result = []
         for i in range(0, len(annotations)):
+            self.logger.debug('{0} {1}'.format(annotations[i]['description'],
+                                               get_label(annotations[i]['description'])))
             result.append((get_label(annotations[i]['description']), [i]))
 
         indexes = None
@@ -147,11 +149,13 @@ class MenuReader:
                 else:
                     a = (result[i0][0], result[i0][1] + result[i1][1])
             result.append(a)
-        
+
+        self.logger.debug('indexes={0}'.format(indexes))
+
         if indexes is None:
             self.logger.error('cannot find menu')
             return []
-
+        
         indexes.sort()
         annotations = list(map(lambda i: annotations[i], indexes))
         return annotations
@@ -199,20 +203,28 @@ class MenuReader:
 
         # Noice canceling
         annotations = self.cancel_noise(annotations)
+        self.logger.debug('annotations(noise_canceled)={0}'.format(annotations))
 
         # Group annotations by line
         annotations = self.group_by_line(annotations)
+        self.logger.debug('annotations(grouped by line)={0}'.format(annotations))
 
         # Get descriptions
         lines = self.get_descriptions(annotations)
         
         menus = []
         for line in lines:
-            t = ''.join(line)
-            if is_japanese_word(t): continue
-            if is_shop_name(t): continue
-            wss = split_by(line, ',')
-            menus += map(lambda ws: ' '.join(ws), wss)
+            # ['rice', ',', 'Vada', '&', 'Payasam']
+            # -> [['rice'], ['Vada', '&', 'Payasam']]
+            for ws in split_by(line, ','):
+                t = ''.join(ws)
+                self.logger.debug('ws={0} jp={1} shop={2}'
+                                  .format(ws,
+                                          is_japanese_word(t),
+                                          is_shop_name(t)))
+                if is_shop_name(t): continue
+                if is_japanese_word(t): continue
+                menus.append(' '.join(ws))
 
         return menus
 
