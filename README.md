@@ -12,3 +12,10 @@ Then put it into settings file. If settings file doesn't exist, it can be create
 
     copy settings.py.sample settings.py
     echo "GOOGLE_API_KEY = 'YourGoogleAPIKey'" >> settings.py
+
+## Install(Windows)
+On Windows, numpy and scipy can be easily installed by using whl.
+Download whl files from below links and `pip install numpy.whl scipy.whl`.
+
+- [numpy+mkl](http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy)
+- [scipy](http://www.lfd.uci.edu/~gohlke/pythonlibs/#scipy)
