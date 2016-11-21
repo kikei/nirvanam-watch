@@ -11,6 +11,17 @@ CHROME_DRIVER_PATH = os.path.join(os.path.dirname(os.path.abspath('__file__')), 
 TOP_PAGE = 'https://www.facebook.com/NirvanamTokyo/'
 CHROME_EXTENSION_FILENAME = 'proxy.zip'
 
+def try_to_get(browser, getter, retry=3, sleep=1.0):
+    for i in range(0, retry):
+        try:
+            x = getter(browser)
+        except Exception as e:
+            print('Error in try_to_get: ' + str(e))
+        if x is not None:
+            return x
+        time.sleep(sleep)
+    return None
+
 def list_menu_anchor(anchors):
     lst = []
     for a in anchors:
@@ -86,11 +97,17 @@ def fetch_menu(dir, path, options=None):
     
             anchor.click()
             time.sleep(3.0)
-    
-        spotlight = browser.find_elements_by_class_name('spotlight')
-    
-        if len(spotlight) >= 0:
-            src = spotlight[0].get_attribute('src')
+
+        def get_spotlight(browser):
+            spotlights = browser.find_elements_by_class_name('spotlight')
+            if len(spotlights) == 0:
+                return None
+            return spotlights[0]
+        
+        spotlight = try_to_get(browser, get_spotlight)
+
+        if spotlight is not None:
+            src = spotlight.get_attribute('src')
             print("spotlight found, src=" + src)
             
             download_as(src, dir, path)
